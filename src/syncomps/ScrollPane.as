@@ -17,7 +17,8 @@ package syncomps
 	import syncomps.styles.Style;
 	import syncomps.styles.DefaultStyle;
 	
-	[Event(name="SCROLL", type="syncomps.events.ScrollEvent")]
+	[Event(name="synScEScroll", type="syncomps.events.ScrollEvent")]
+	
 	/**
 	 * ...
 	 * @author Gimmick
@@ -59,7 +60,7 @@ package syncomps
 			cl_verticalScroll.width = 16
 			addChild(spr_source)
 			addChild(shp_source)
-			drawGraphics(DEF_WIDTH, DEF_HEIGHT, str_state)
+			drawGraphics(DEF_WIDTH, DEF_HEIGHT, state)
 			cl_verticalScroll.addEventListener(ScrollEvent.SCROLL, scrollSourceVertical)
 			cl_horizontalScroll.addEventListener(ScrollEvent.SCROLL, scrollSourceHorizontal)
 			
@@ -188,12 +189,12 @@ package syncomps
 		
 		override public function set width(value:Number):void
 		{
-			drawGraphics(value, height, str_state)
+			super.width = value
 			var prevScrollValue:Number = cl_horizontalScroll.value;
 			if(b_displayScrollBars) {
 				displayScrollBars(b_forceScrollDisplay)
 			}
-			var contentBiggerThanPane:Boolean = dsp_source.width >= (value - pt_scrollSize.x)
+			var contentBiggerThanPane:Boolean = dsp_source && dsp_source.width >= (value - pt_scrollSize.x)
 			cl_horizontalScroll.enabled = contentBiggerThanPane
 			prevScrollValue *= int(contentBiggerThanPane)
 			horizontalScrollPosition = prevScrollValue
@@ -209,12 +210,12 @@ package syncomps
 		
 		override public function set height(value:Number):void 
 		{
-			drawGraphics(width, value, str_state)
+			super.height = value
 			var prevScrollValue:Number = cl_verticalScroll.value;
 			if(b_displayScrollBars) {
 				displayScrollBars(b_forceScrollDisplay)
 			}
-			var contentBiggerThanPane:Boolean = dsp_source.height >= (value - pt_scrollSize.y)
+			var contentBiggerThanPane:Boolean = dsp_source && dsp_source.height >= (value - pt_scrollSize.y)
 			cl_verticalScroll.enabled = contentBiggerThanPane
 			prevScrollValue *= int(contentBiggerThanPane)
 			verticalScrollPosition = prevScrollValue
@@ -326,17 +327,13 @@ package syncomps
 			}
 			cl_horizontalScroll.setScrollProperties(horizontalPageSize, 0, maxWidth)
 			cl_verticalScroll.setScrollProperties(verticalPageSize, 0, maxHeight)
-			drawGraphics(width, height, str_state)
+			drawGraphics(width, height, state)
 		}
 		
 		public function hideScrollBars():void
 		{
-			if (cl_horizontalScroll.parent) {
-				removeChild(cl_horizontalScroll)	
-			}
-			if (cl_verticalScroll.parent) {
-				removeChild(cl_verticalScroll)
-			}
+			cl_verticalScroll.parent && cl_verticalScroll.parent.removeChild(cl_verticalScroll)
+			cl_horizontalScroll.parent && cl_horizontalScroll.parent.removeChild(cl_horizontalScroll)
 			pt_scrollSize.setTo(cl_verticalScroll.width * int(cl_verticalScroll.parent != null), cl_horizontalScroll.height * int(cl_horizontalScroll.parent != null))
 			b_displayScrollBars = false;
 		}
@@ -353,7 +350,7 @@ package syncomps
 				spr_source.x = spr_source.y = 0
 				spr_source.mask = shp_source
 			}
-			drawGraphics(width, height, str_state)
+			drawGraphics(width, height, state)
 			displayScrollBars(b_forceScrollDisplay)
 		}
 		
@@ -384,7 +381,10 @@ package syncomps
 		public function set horizontalScrollPosition(val:Number):void
 		{
 			var newValue:Number = val;
-			if(val < 0 || dsp_source.width < (width - pt_scrollSize.x)) {
+			if(!dsp_source) {
+				return;
+			}
+			else if(val < 0 || dsp_source.width < (width - pt_scrollSize.x)) {
 				newValue = 0
 			}
 			else if (val > dsp_source.width) {
@@ -401,7 +401,10 @@ package syncomps
 		public function set verticalScrollPosition(val:Number):void
 		{
 			var newValue:Number = val;
-			if(val < 0 || dsp_source.height < (height - pt_scrollSize.y)) {
+			if(!dsp_source) {
+				return;
+			}
+			else if(val < 0 || dsp_source.height < (height - pt_scrollSize.y)) {
 				newValue = 0
 			}
 			else if (val > dsp_source.height - (height - pt_scrollSize.y)) {

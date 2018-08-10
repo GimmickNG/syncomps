@@ -56,21 +56,23 @@
 			{
 				var mEvt:MouseEvent = evt as MouseEvent
 				var objects:Array = getObjectsUnderPoint(new Point(mEvt.stageX, mEvt.stageY))
-				var index:int;
-				for (var i:int = objects.length - 1, sliceValue:int = -1; sliceValue == -1 && i >= 0; --i)
+				var index:int, sliceValue:int = -1
+				objects.reverse().some(function findItem(item:DisplayObject, index:int, array:Array):Boolean
 				{
-					if (!(objects[i] == shp_connectingLines || objects[i] == shp_pieMenuStar)) {
-						sliceValue = dp_menuItems.indexOfByField("objectProperty", objects[i]);
+					if (item == shp_connectingLines || item == shp_pieMenuStar) {
+						return false
 					}
-				}
+					else sliceValue = indexOf(function indexByProperty(innerItem:Object, index:int, array:Array):Boolean {
+						return item == innerItem
+					});
+					
+					return sliceValue != -1
+				}, this);
 			}
 			i_sliceValue = sliceValue
 			var state:String;
 			switch(evt.type)
 			{
-				case MouseEvent.CLICK:
-					trace("clicekd", evt.target)
-					break;
 				case MouseEvent.MOUSE_DOWN:
 					state = DefaultStyle.DOWN
 					break;
@@ -83,7 +85,7 @@
 					break;
 				case Event.CHANGE:
 				default:
-					state = str_state
+					state = this.state
 					break;
 			}
 			drawGraphics(width, height, state);
@@ -169,23 +171,20 @@
 		
 		public function showMenu(width:uint, height:uint):void
 		{
-			var i:uint
 			b_menuOpen = true;
 			addChild(shp_connectingLines)
-			const numItems:uint = dp_menuItems.length
-			const itemAngle:Number = 6.28318530718 / numItems //--> 2*PI / numItems
 			const halfWidth:Number = 0.5 * width
 			const halfHeight:Number = 0.5 * height
-			for (i = 0; i < dp_menuItems.length; ++i)
+			const itemAngle:Number = (Math.PI * 2) / dp_menuItems.numItems
+			dp_menuItems.forEach(function position(item:DisplayObject, index:int, array:Array):void
 			{
-				var angle:Number = itemAngle * i
-				var currItem:DisplayObject = dp_menuItems.getItemAt(i).objectProperty as DisplayObject
-				var halfItemHeight:Number = 0.5 * currItem.height
-				var halfItemWidth:Number = 0.5 * currItem.width
-				currItem.x = (Math.cos(angle) * (halfWidth - halfItemWidth)) - (halfItemWidth);
-				currItem.y = (Math.sin(angle) * (halfHeight - halfItemHeight)) - (halfItemHeight);
-				addChild(currItem)
-			}
+				var angle:Number = itemAngle * index
+				var halfItemWidth:Number = 0.5 * item.width
+				var halfItemHeight:Number = 0.5 * item.height
+				item.x = (Math.cos(angle) * (halfWidth - halfItemWidth)) - (halfItemWidth);
+				item.y = (Math.sin(angle) * (halfHeight - halfItemHeight)) - (halfItemHeight);
+				addChild(item)
+			}, this);
 			addChild(shp_pieMenuStar)
 			drawGraphics(width, height, DefaultStyle.BACKGROUND)
 		}
@@ -205,11 +204,11 @@
 			dp_menuItems.addItemAt(DisplayObject(item), index)
 		}
 		
-		public function addItems(...items):void 
+		public function addItems(items:Array):void 
 		{
-			for (var i:uint = 0; i < items.length; ++i) {
-				addItem(items[i])
-			}
+			items.forEach(function add(item:DisplayObject, index:int, array:Array):void {
+				addItem(item)
+			});
 		}
 		
 		public function removeItem(item:Object):Object {
@@ -224,16 +223,20 @@
 			return dp_menuItems.getItemAt(index)
 		}
 		
-		public function removeAll():void 
+		public function removeItems():void 
 		{
 			removeChildren()
-			dp_menuItems.removeAll()
+			dp_menuItems.removeItems()
 			addChild(shp_connectingLines)
 			addChild(shp_pieMenuStar)
 		}
 		
 		public function get items():Array {
 			return dp_menuItems.items;
+		}
+		
+		public function set items(items:Array):void {
+			dp_menuItems.items = items
 		}
 		
 		public function get numItems():uint {
@@ -246,6 +249,14 @@
 		
 		public function get menuOpen():Boolean {
 			return b_menuOpen;
+		}
+		
+		public function getItemBy(searchFunction:Function):DataElement {
+			return dp_menuItems.getItemBy(searchFunction);
+		}
+		
+		public function indexOf(searchFunction:Function, fromIndex:int = 0):int {
+			return dp_menuItems.indexOf(searchFunction, fromIndex);
 		}
 		
 	}

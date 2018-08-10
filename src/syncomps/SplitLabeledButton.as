@@ -1,6 +1,7 @@
 package syncomps 
 {
 	import flash.display.BitmapData;
+	import flash.display.DisplayObject;
 	import flash.display.Graphics;
 	import flash.display.Shape;
 	import flash.display.Sprite;
@@ -11,26 +12,30 @@ package syncomps
 	import syncomps.data.DataProvider;
 	import syncomps.events.ButtonEvent;
 	import syncomps.events.DataProviderEvent;
-	import syncomps.events.ListCellEvent;
+	import syncomps.events.ListEvent;
 	import syncomps.events.StyleEvent;
-	import syncomps.interfaces.IAutoResize;
+	import syncomps.interfaces.graphics.IAutoResize;
 	import syncomps.interfaces.IDataProvider;
-	import syncomps.interfaces.ILabel;
+	import syncomps.interfaces.graphics.IIcon;
+	import syncomps.interfaces.graphics.ILabel;
 	import syncomps.styles.SplitButtonStyle;
 	import syncomps.styles.Style;
 	import syncomps.styles.DefaultStyle;
 	import syncomps.styles.StyleManager;
 	
 	[Event(name = "change", type = "flash.events.Event")]
-	[Event(name = "CLICK", type = "syncomps.events.ButtonEvent")]
-	[Event(name="CELL_CLICK", type="syncomps.events.ListCellEvent")]
-	[Event(name="MENU_STATE_CHANGE", type="syncomps.events.ComboBoxEvent")]
+	
+	[Event(name = "synBEButtonClick", type = "syncomps.events.ButtonEvent")]
+	
+	[Event(name = "synLCECellClick", type = "syncomps.events.ListEvent")]
+	
+	[Event(name = "synCBEMenuStateChange", type = "syncomps.events.ComboBoxEvent")]
 	
 	/**
 	 * ...
 	 * @author Gimmick
 	 */
-	public class SplitLabeledButton extends SynComponent implements IDataProvider, IAutoResize, ILabel
+	public class SplitLabeledButton extends SynComponent implements IDataProvider, IAutoResize, ILabel, IIcon
 	{
 		public static const DEF_WIDTH:int = 96
 		public static const DEF_HEIGHT:int = 32;
@@ -54,10 +59,10 @@ package syncomps
 			StyleManager.unregister(cmpi_button)
 			StyleManager.unregister(cmpi_dropdown)
 			
-			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGE, updateStyles, false, 0, true)
+			addEventListener(StyleEvent.STYLE_CHANGE, updateStyles, false, 0, true)
 			
 			cmpi_dropdown.addEventListener(Event.CHANGE, updateButton, false, 0, true)
-			cmpi_dropdown.addEventListener(ListCellEvent.CELL_CLICK, setTextAndDispatch, false, 0, true)
+			cmpi_dropdown.addEventListener(ListEvent.CELL_CLICK, setTextAndDispatch, false, 0, true)
 			cmpi_dropdown.addEventListener(DataProviderEvent.DATA_REFRESH, changeButtonText, false, 0, true)
 			cmpi_dropdown.addEventListener(DataProviderEvent.ITEM_REMOVED, updateButton, false, 0, true)
 			cmpi_button.addEventListener(ButtonEvent.CLICK, dispatchEvent, false, 0, true)
@@ -66,11 +71,6 @@ package syncomps
 			addChild(cmpi_button)
 			addChild(shp_baseGraphics)
 			drawGraphics(DEF_WIDTH, DEF_HEIGHT, DefaultStyle.BACKGROUND)
-		}
-		
-		override public function get enabled():Boolean 
-		{
-			return super.enabled;
 		}
 		
 		override public function set enabled(value:Boolean):void 
@@ -115,6 +115,7 @@ package syncomps
 		{
 			cmpi_button.setStyle(evt.style, evt.value)
 			cmpi_dropdown.setStyle(evt.style, evt.value)
+			drawGraphics(width, height, state)
 		}
 		
 		override public function getDefaultStyle():Class {
@@ -128,57 +129,36 @@ package syncomps
 		{
 			super.unload();
 			removeChildren();
-			cmpi_dropdown.removeEventListener(ListCellEvent.CELL_CLICK, setTextAndDispatch)
+			cmpi_dropdown.removeEventListener(ListEvent.CELL_CLICK, setTextAndDispatch)
 		}
 		
 		override protected function drawGraphics(width:int, height:int, state:String):void 
 		{
 			super.drawGraphics(width, height, state);
 			var graphics:Graphics = shp_baseGraphics.graphics
-			var colour:uint = uint(getStyle(DefaultStyle.BACKGROUND))
+			var color:uint = uint(getStyle(DefaultStyle.BACKGROUND))
 			if(!enabled) {
-				colour = uint(getStyle(DefaultStyle.DISABLED))
+				color = uint(getStyle(DefaultStyle.DISABLED))
 			}
 			graphics.clear()
-			graphics.lineStyle(1, colour)
-			graphics.drawRect(0, 0, width - 1, height - 1)
-			graphics.lineStyle(1)
-			graphics.moveTo(width - 23, 4)
-			graphics.lineTo(width - 23, height - 4)
-			
 			cmpi_dropdown.width = width;
 			cmpi_dropdown.height = height
 			cmpi_button.height = height - 2;
+			var offsetX:int;
 			if (width > 24) {
-				cmpi_button.width = width - 24
+				offsetX = 24
 			}
-			else {
-				cmpi_button.width = width;
-			}
+			graphics.moveTo(width - offsetX, 4)
+			graphics.lineTo(width - offsetX, height - 4)
+			cmpi_button.width = width - offsetX
 		}
 		
-		override public function set width(value:Number):void {
-			drawGraphics(value, height, str_state)
-		}
-		
-		override public function set height(value:Number):void {
-			drawGraphics(width, value, str_state)
-		}
-		
-		private function setTextAndDispatch(evt:ListCellEvent):void 
+		private function setTextAndDispatch(evt:ListEvent):void 
 		{
 			evt.preventDefault()
-			addEventListener(ListCellEvent.CELL_CLICK, setTextAfterEvent)
-			dispatchEvent(new ListCellEvent(evt.type, evt.index, evt.item, false, true))
-		}
-		
-		private function setTextAfterEvent(evt:ListCellEvent):void 
-		{
-			removeEventListener(ListCellEvent.CELL_CLICK, setTextAfterEvent)
-			if(evt && evt.cancelable && evt.isDefaultPrevented()) {
-				return;
+			if(dispatchEvent(new ListEvent(ListEvent.CELL_CLICK, evt.index, evt.item, false, true))) {
+				selectedIndex = evt.index;
 			}
-			selectedIndex = evt.index
 		}
 		
 		public function resizeWidth():void 
@@ -197,6 +177,10 @@ package syncomps
 			cmpi_dropdown.addItem(item);
 		}
 		
+		public function addItems(items:Array):void {
+			cmpi_dropdown.addItem(items);
+		}
+		
 		public function addItemAt(item:Object, index:int):void {
 			cmpi_dropdown.addItemAt(item, index);
 		}
@@ -211,6 +195,14 @@ package syncomps
 		
 		public function getItemAt(index:int):DataElement {
 			return cmpi_dropdown.getItemAt(index);
+		}
+		
+		public function getItemBy(searchFunction:Function):DataElement {
+			return cmpi_dropdown.getItemBy(searchFunction);
+		}
+		
+		public function indexOf(searchFunction:Function, fromIndex:int = 0):int {
+			return cmpi_dropdown.indexOf(searchFunction, fromIndex);
 		}
 		
 		public function hideMenu():void {
@@ -262,11 +254,15 @@ package syncomps
 			cmpi_dropdown.showMenu();
 		}
 		
-		public function removeAll():void {
-			cmpi_dropdown.removeAll()
+		public function removeItems():void {
+			cmpi_dropdown.removeItems()
 		}
 		
-		public function get icon():BitmapData 
+		public function get list():List {
+			return cmpi_dropdown.list;
+		}
+		
+		public function get icon():DisplayObject
 		{
 			if(selectedItem) {
 				return selectedItem.icon
@@ -274,7 +270,7 @@ package syncomps
 			return cmpi_button.icon
 		}
 		
-		public function set icon(value:BitmapData):void 
+		public function set icon(value:DisplayObject):void 
 		{
 			cmpi_button.icon = value;
 			if(selectedItem) {
@@ -284,6 +280,10 @@ package syncomps
 		
 		public function get items():Array {
 			return cmpi_dropdown.items
+		}
+		
+		public function set items(items:Array):void {
+			cmpi_dropdown.items = items
 		}
 		
 		public function get label():String {

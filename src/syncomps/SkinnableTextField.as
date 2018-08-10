@@ -3,13 +3,21 @@ package syncomps
 	import flash.text.TextField;
 	import flash.text.TextFormat;
 	import syncomps.events.StyleEvent;
+	import syncomps.interfaces.IStyleInternal;
 	import syncomps.interfaces.ISynComponent;
 	import syncomps.styles.SkinnableTextStyle;
 	import syncomps.styles.Style;
 	import syncomps.styles.StyleManager;
 	
-	[Event(name="STYLE_CHANGE", type="syncomps.events.StyleEvent")]
-	[Event(name="STYLE_CHANGING", type="syncomps.events.StyleEvent")]
+	/**
+	 * Dispatched when a style property is about to change.
+	 */
+	[Event(name="synStEStyleChanging", type="syncomps.events.StyleEvent")]
+	
+	/**
+	 * Dispatched when a style property has changed.
+	 */
+	[Event(name="synStEStyleChange", type="syncomps.events.StyleEvent")]
 	
 	/**
 	 * ...
@@ -19,7 +27,8 @@ package syncomps
 	{
 		protected static var DEFAULT_STYLE:Class = SkinnableTextStyle;
 		
-		private var cl_style:Style;
+		//TODO add Label class which uses this and has icon control
+		private var cl_style:IStyleInternal
 		private var b_enabled:Boolean;
 		public function SkinnableTextField() 
 		{
@@ -29,7 +38,7 @@ package syncomps
 		
 		private function init():void 
 		{
-			cl_style = (new (getDefaultStyle())()) as Style
+			cl_style = (new (getDefaultStyle())()) as IStyleInternal
 			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGING, updateStyles, false, 0, true)
 			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGE, applyStylesOnEvent, false, 0, true)
 			StyleManager.register(this)
@@ -58,14 +67,7 @@ package syncomps
 		private function updateStyles(evt:StyleEvent):void 
 		{
 			evt.preventDefault()
-			addEventListener(StyleEvent.STYLE_CHANGING, updateStyleOnChange, false, 0, true)
-			dispatchEvent(evt)
-		}
-		
-		private function updateStyleOnChange(evt:StyleEvent):void 
-		{
-			removeEventListener(StyleEvent.STYLE_CHANGING, updateStyleOnChange)
-			if(!evt.isDefaultPrevented()) {
+			if (dispatchEvent(evt)) {
 				styleDefinition.forceStyle(evt.style, evt.value)
 			}
 		}
@@ -80,10 +82,6 @@ package syncomps
 		public function unload():void {
 			StyleManager.unregister(this)
 		}
-		override public function get text():String 
-		{
-			return super.text;
-		}
 		
 		override public function set text(value:String):void 
 		{
@@ -92,30 +90,9 @@ package syncomps
 				setTextFormat(getStyle(SkinnableTextStyle.TEXT_FORMAT) as TextFormat)
 			}
 		}
-		public function refresh():void
-		{
-			var textFormat:TextFormat = getStyle(SkinnableTextStyle.TEXT_FORMAT) as TextFormat
-			if (textFormat)
-			{
-				if (textFormat.color != null)
-				{
-					//color is common for all text in field
-					if(enabled) {
-						textFormat.color = getStyle(SkinnableTextStyle.ENABLED)
-					}
-					else {
-						textFormat.color = getStyle(SkinnableTextStyle.DISABLED)
-					}
-				}
-				setTextFormat(textFormat)
-				defaultTextFormat = textFormat
-			}
-			cl_style.refresh()
-		}
 		
 		/* DELEGATE IStyleDefinition */
-		
-		public function get styleDefinition():Style {
+		public function get styleDefinition():IStyleInternal {
 			return cl_style
 		}
 		
@@ -129,7 +106,7 @@ package syncomps
 			styleDefinition.setStyle(style, value);
 		}
 		
-		public function applyStyle(style:Style):void {
+		public function applyStyle(style:IStyleInternal):void {
 			styleDefinition.applyStyle(style)
 		}
 		

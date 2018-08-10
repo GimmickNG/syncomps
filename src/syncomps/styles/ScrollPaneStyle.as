@@ -4,7 +4,7 @@ package syncomps.styles
 	 * ...
 	 * @author Gimmick
 	 */
-	public final class ScrollPaneStyle extends Style
+	public class ScrollPaneStyle extends Style
 	{
 		public static const POLICY_HORIZONTAL:int = 1;
 		public static const POLICY_VERTICAL:int = 2;
@@ -18,16 +18,11 @@ package syncomps.styles
 		public static const SCROLL_POLICY:String = "scrollPolicy"
 		public function ScrollPaneStyle() 
 		{
-			super([DefaultStyle, ScrollBarStyle], [MASK_METHOD, SCROLL_SIZE, SCROLL_POLICY])
-			init()
+			super([DefaultStyle, ScrollBarStyle])
+			appendStyle(SCROLL_POLICY, POLICY_NONE)
+			appendStyle(MASK_METHOD, MASK)
+			appendStyle(SCROLL_SIZE, 1)
 		}
-		private function init():void
-		{
-			setStyle(SCROLL_SIZE, 1)	
-			setStyle(MASK_METHOD, MASK)
-			setStyle(SCROLL_POLICY, POLICY_NONE)
-		}
-		
 	}
 
 }

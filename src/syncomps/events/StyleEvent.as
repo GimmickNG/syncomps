@@ -5,12 +5,12 @@ package syncomps.events
 	/**
 	 * @eventType	syncomps.events.StyleEvent.STYLE_CHANGE
 	 */
-	[Event(name = "STYLE_CHANGE", type = "syncomps.events.StyleEvent")]
+	[Event(name = "synStEStyleChange", type = "syncomps.events.StyleEvent")]
 	
 	/**
 	 * @eventType	syncomps.events.StyleEvent.STYLE_CHANGING
 	 */
-	[Event(name = "STYLE_CHANGING", type = "syncomps.events.StyleEvent")]
+	[Event(name = "synStEStyleChanging", type = "syncomps.events.StyleEvent")]
 	
 	/**
 	 * ...
@@ -18,8 +18,8 @@ package syncomps.events
 	 */
 	public class StyleEvent extends Event 
 	{
-		public static const STYLE_CHANGE:String = "STYLE_CHANGE"
-		static public const STYLE_CHANGING:String = "STYLE_CHANGING";
+		public static const STYLE_CHANGE:String = "synStEStyleChange";
+		public static const STYLE_CHANGING:String = "synStEStyleChanging";
 		private var obj_style:Object;
 		private var obj_value:Object;
 		public function StyleEvent(type:String, style:Object, value:Object, bubbles:Boolean=false, cancelable:Boolean=false) 

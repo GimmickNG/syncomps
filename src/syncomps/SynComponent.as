@@ -5,6 +5,7 @@ package syncomps
 	import flash.utils.getQualifiedClassName;
 	import syncomps.events.StyleEvent;
 	import syncomps.interfaces.IStyleDefinition;
+	import syncomps.interfaces.IStyleInternal;
 	import syncomps.interfaces.ISynComponent;
 	import syncomps.styles.Style;
 	import syncomps.styles.StyleManager;
@@ -14,14 +15,23 @@ package syncomps
 	 */
 	public class SynComponent extends Sprite implements ISynComponent
 	{
-		protected var str_state:String;
-		protected var cl_style:Style;
+		private var str_state:String;
+		private var cl_style:IStyleInternal;
 		public function SynComponent() {
 			init();
 		}
 		
+		private function init():void
+		{
+			cl_style = (new (getDefaultStyle())()) as IStyleInternal
+			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGE, handleStyleChangeEvent, false, 0, true)
+			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGING, updateStyles, false, 0, true)
+			StyleManager.register(this)
+			tabEnabled = true
+		}
+		
 		//interface methods for IStyleDefinition
-		public function get styleDefinition():Style {
+		public function get styleDefinition():IStyleInternal {
 			return cl_style
 		}
 		
@@ -34,37 +44,20 @@ package syncomps
 		public function getStyle(style:Object):Object {
 			return styleDefinition.getStyle(style)
 		}
-		public function applyStyle(style:Style):void {
+		public function applyStyle(style:IStyleInternal):void {
 			styleDefinition.applyStyle(style)
 		}
 		
 		public function getDefaultStyle():Class {
 			return null
 		}
-		public function setDefaultStyle(styleClass:Class):void {
-			return;
-		}
 		
-		private function init():void
-		{
-			tabEnabled = true
-			cl_style = (new (getDefaultStyle())()) as Style
-			StyleManager.register(this)
-			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGE, handleStyleChangeEvent, false, 0, true)
-			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGING, updateStyles, false, 0, true)
-		}
+		public function setDefaultStyle(styleClass:Class):void { /* empty implementation - abstract method */ }
 		
 		private function updateStyles(evt:StyleEvent):void 
 		{
 			evt.preventDefault()
-			addEventListener(StyleEvent.STYLE_CHANGING, updateStyleOnChange, false, 0, true)
-			dispatchEvent(evt)
-		}
-		
-		private function updateStyleOnChange(evt:StyleEvent):void 
-		{
-			removeEventListener(StyleEvent.STYLE_CHANGING, updateStyleOnChange)
-			if(!evt.isDefaultPrevented()) {
+			if(dispatchEvent(evt)) {
 				styleDefinition.forceStyle(evt.style, evt.value)
 			}
 		}
@@ -105,10 +98,28 @@ package syncomps
 			str_state = state
 		}
 		
-		public function refresh():void
+		override public function set width(value:Number):void 
 		{
-			cl_style.refresh()
-			drawGraphics(width, height, str_state)
+			if(value < 0) {
+				value = 0;
+			}
+			drawGraphics(value, height, str_state);
+		}
+		
+		override public function set height(value:Number):void 
+		{
+			if(value < 0) {
+				value = 0;
+			}
+			drawGraphics(width, value, str_state);
+		}
+		
+		protected function get state():String {
+			return str_state;
+		}
+		
+		protected function set state(value:String):void {
+			str_state = value;
 		}
 	}
 

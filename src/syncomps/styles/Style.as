@@ -2,93 +2,88 @@ package syncomps.styles
 {
 	import flash.events.EventDispatcher;
 	import flash.utils.Dictionary;
+	import flash.utils.getDefinitionByName;
 	import flash.utils.getQualifiedClassName;
 	import syncomps.events.StyleEvent;
 	import syncomps.interfaces.IStyleDefinition;
+	import syncomps.interfaces.IStyleInternal;
+	
+	/**
+	 * Dispatched when a style property is changing.
+	 */
+	[Event(name = "synStEStyleChanging", type = "syncomps.events.StyleEvent")]
+	
 	/**
 	 * The base class for all styles. Use this as an abstract class, which defines fields, or properties, used by the Style object.
 	 * @author Gimmick
 	 */
-	public class Style extends EventDispatcher implements IStyleDefinition
+	public class Style extends EventDispatcher implements IStyleInternal
 	{
-		protected var arr_fields:Array
-		private var arr_parents:Array
+		private var arr_fields:Array
 		private var dct_styleSets:Dictionary
+		private var vec_parents:Vector.<Class>
+		
 		/**
-		 * 
-		 * @param	baseStyles An array of Class
+		 * Creates a style.
+		 * @param	baseStyles	An array of Class which the style inherits properties from.
+		 * @param	fields	The fields which are to be inherited from the parent styles.
 		 */
-		public function Style(baseStyles:Array = null, fields:Array = null) 
+		public function Style(baseStyles:Array = null)
 		{
-			if(!fields) {
-				fields = new Array()
-			}
-			if(!baseStyles) {
-				baseStyles = new Array()
-			}
-			init(baseStyles, fields)
-		}
-		
-		private function init(inheritArray:Array, fieldArray:Array):void 
-		{
-			arr_fields = fieldArray
-			dct_styleSets = new Dictionary(true)
-			arr_parents = inheritArray.concat()
-			for (var i:int = inheritArray.length - 1; i >= 0; --i) {
-				copyFrom(inheritArray[i] as Class)
-			}
+			var inheritArray:Vector.<Class> = Vector.<Class>(baseStyles || []);
 			
-			addEventListener(StyleEvent.STYLE_CHANGING, setStyleOnEvent, false, 0, true)
+			arr_fields = new Array()
+			vec_parents = inheritArray
+			dct_styleSets = new Dictionary(true)
+			inheritArray.reverse().forEach(function copy(item:Class, index:int, array:Vector.<Class>):void {
+				copyFrom(item)
+			});
 		}
 		
-		public function get styleDefinition():Style {
+		public function get styleDefinition():IStyleInternal {
 			return this
 		}
 		
 		public function getDefaultStyle():Class {
-			return Style
+			return getDefinitionByName(getQualifiedClassName(this)) as Class
 		}
 		
-		public function setDefaultStyle(styleClass:Class):void {
-			return;
-		}
+		public function setDefaultStyle(styleClass:Class):void { /* no default implementation: abstract */ }
 		
 		public function getStyle(style:Object):Object {
 			return dct_styleSets[style]
 		}
 		
-		public function getStyleDefinition():Object
+		public function getStyleProperties():Dictionary
 		{
-			var def:Object = {}
-			for (var i:Object in dct_styleSets) {
-				def[i] = dct_styleSets[i]
+			var properties:Dictionary = new Dictionary(true)
+			for (var prop:Object in dct_styleSets) {
+				properties[prop] = dct_styleSets[prop]
 			}
-			return def
+			return properties
+		}
+		
+		protected function appendStyle(style:Object, value:Object):void
+		{
+			if(arr_fields.lastIndexOf(style) != -1) {
+				return;
+			}
+			arr_fields.push(style)
+			forceStyle(style, value)
 		}
 		
 		public function setStyle(style:Object, value:Object):void
 		{
-			if ((style in dct_styleSets && nonStrictEquals(dct_styleSets[style], value)) || arr_fields.indexOf(style) == -1) {
-				return;	
+			if (arr_fields.indexOf(style) == -1 || (style in dct_styleSets && ((dct_styleSets[style] === value) || (dct_styleSets[style] == value) || (isNaN(dct_styleSets[style] as Number) && isNaN(value as Number))))) {
+				return;	//do not set style if it is not present in traits, or if it is the same
 			}
-			dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGING, style, value, true, true))
-		}
-		
-		[Inline]
-		private final function nonStrictEquals(varA:*, varB:*):Boolean {
-			return (varA == varB) || (fastIsNaN(varA) && fastIsNaN(varB))
-		}
-		
-		[Inline]
-		private final function fastIsNaN(varA:*):Boolean {
-			return varA !== varA	//NaN == NaN or NaN === NaN is always false but 1===1 so 
-		}
-		
-		private function setStyleOnEvent(evt:StyleEvent):void
-		{
-			if(!evt.isDefaultPrevented()) {
-				forceStyle(evt.style, evt.value)
+			else if(dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGING, style, value, true, true))) {
+				forceStyle(style, value)
 			}
+		}
+		
+		public function getFields():Array {
+			return arr_fields && arr_fields.concat()
 		}
 		
 		public function copyFrom(defaultStyleClass:Class):void 
@@ -96,24 +91,28 @@ package syncomps.styles
 			if(!defaultStyleClass) {
 				return;
 			}
-			var style:Style = new defaultStyleClass as Style
-			var defaultStyleSet:Dictionary = style.dct_styleSets
-			arr_fields = arr_fields.concat.apply(null, style.arr_fields)
+			
+			var style:IStyleInternal = new defaultStyleClass() as IStyleInternal
+			if(!dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGING, null, style, true, true))) {
+				return;
+			}
+			
+			var defaultStyleSet:Dictionary = style.getStyleProperties()
+			arr_fields = arr_fields.concat(style.getFields())
 			for (var prop:Object in defaultStyleSet) {
 				dct_styleSets[prop] = defaultStyleSet[prop]
 			}
-			var parents:Array = style.arr_parents;
+			
+			var parents:Vector.<Class> = style.getInheritanceChain()
 			if (parents)
 			{
-				if (!arr_parents) {
-					arr_parents = parents.concat().reverse()
-				}
-				else for (var i:uint = 0; i < parents.length; ++i)
+				vec_parents ||= parents.concat().reverse();
+				parents.forEach(function addParents(item:Class, index:int, array:Vector.<Class>):void
 				{
-					if(arr_parents.indexOf(parents[i]) == -1) {
-						arr_parents.unshift(parents[i])
+					if(vec_parents.lastIndexOf(item) == -1) {
+						vec_parents.unshift(item);
 					}
-				}
+				});
 			}
 			dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGE, null, style, true, false))
 		}
@@ -123,42 +122,25 @@ package syncomps.styles
 		 * Similar to copyFrom(), but does not introduce new properties.
 		 * @param	style
 		 */
-		public function applyStyle(style:Style):void 
+		public function applyStyle(style:IStyleInternal):void 
 		{
-			if (style)
-			{
-				addEventListener(StyleEvent.STYLE_CHANGING, applyStyleOnEvent, false, 0, true)
-				dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGING, null, style, true, true))
-			}
-		}
-		
-		private function applyStyleOnEvent(evt:StyleEvent):void
-		{
-			removeEventListener(StyleEvent.STYLE_CHANGING, applyStyleOnEvent)
-			if(evt.isDefaultPrevented()) {
+			if (!style) {
 				return;
 			}
-			var style:Style = evt.value as Style
-			var styleSet:Dictionary = style.dct_styleSets
-			for(var i:Object in dct_styleSets) {
-				dct_styleSets[i] = styleSet[i]
+			var styleSet:Dictionary = style.getStyleProperties()
+			for (var property:Object in dct_styleSets)
+			{
+				if (property in styleSet && dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGING, property, styleSet[property], true, true))) {
+					forceStyle(property, styleSet[property])
+				}
 			}
-			dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGE, null, evt.value, true, false))
 		}
 		
-		public function getInheritanceChain():Array {
-			return arr_parents.concat()
+		public function getInheritanceChain():Vector.<Class> {
+			return vec_parents && vec_parents.concat()
 		}
 		
-		public function refresh():void 
-		{
-			for (var prop:Object in dct_styleSets) {
-				dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGE, prop, dct_styleSets[prop], true, false))
-			}
-			dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGE, null, null, true, false))
-		}
-		
-		public function forceStyle(style:Object, value:Object):void 
+		public function forceStyle(style:Object, value:Object):void
 		{
 			dct_styleSets[style] = value
 			dispatchEvent(new StyleEvent(StyleEvent.STYLE_CHANGE, style, value, true, false))

@@ -5,16 +5,17 @@ package syncomps.events
 	/**
 	 * @eventType	syncomps.events.ButtonEvent.CLICK
 	 */
-	[Event(name="CLICK", type="syncomps.events.ButtonEvent")]
+	[Event(name = "synBEButtonClick", type = "syncomps.events.ButtonEvent")]
+	
 	/**
 	 * ...
 	 * @author Gimmick
 	 */
 	public class ButtonEvent extends Event 
 	{
-		public static const CLICK:String = "CLICK";
+		public static const CLICK:String = "synBEButtonClick";
 		
-		public function ButtonEvent(type:String, bubbles:Boolean=false, cancelable:Boolean=false) {
+		public function ButtonEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false) {
 			super(type, bubbles, cancelable);
 		} 
 		

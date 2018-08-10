@@ -5,7 +5,7 @@ package syncomps.events
 	/**
 	 * @eventType	syncomps.events.ScrollEvent.SCROLL
 	 */
-	[Event(name = "SCROLL", type = "syncomps.events.ScrollEvent")]
+	[Event(name = "synScEScroll", type = "syncomps.events.ScrollEvent")]
 	
 	/**
 	 * ...
@@ -13,16 +13,17 @@ package syncomps.events
 	 */
 	public class ScrollEvent extends Event 
 	{
-		public static const SCROLL:String = "SCROLL"
+		public static const SCROLL:String = "synScEScroll";
+		
+		private var i_direction:int;
 		private var num_delta:Number;
 		private var num_scrollPosition:Number;
-		private var i_direction:int;
-		public function ScrollEvent(type:String, scrollPosition:Number, direction:int, delta:Number = 0, bubbles:Boolean=false, cancelable:Boolean=false) 
+		public function ScrollEvent(type:String, scrollPosition:Number, direction:int, delta:Number = 0, bubbles:Boolean = false, cancelable:Boolean = false)
 		{ 
 			super(type, bubbles, cancelable);
-			num_scrollPosition = scrollPosition
 			num_delta = delta
 			i_direction = direction;
+			num_scrollPosition = scrollPosition
 		} 
 		
 		public override function clone():Event {

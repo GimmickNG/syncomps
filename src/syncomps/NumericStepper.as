@@ -17,7 +17,6 @@ package syncomps
 	import flash.ui.Keyboard;
 	import flash.utils.Timer;
 	import syncomps.events.StyleEvent;
-	import syncomps.interfaces.ILabel;
 	import syncomps.styles.DefaultInnerTextStyle;
 	import syncomps.styles.SkinnableTextStyle;
 	import syncomps.styles.Style;
@@ -30,7 +29,7 @@ package syncomps
 	 * ...
 	 * @author Gimmick
 	 */
-	public class NumericStepper extends SynComponent implements ILabel
+	public class NumericStepper extends SynComponent
 	{
 		public static const DEF_WIDTH:int = 96
 		public static const DEF_HEIGHT:int = 32;
@@ -74,13 +73,13 @@ package syncomps
 			addChild(spr_downButton)
 			addChild(cmpi_valueField)
 			cmpi_valueField.addEventListener(Event.CHANGE, validateInput, false, 0, true)
-			cmpi_valueField.setStyle(DefaultInnerTextStyle.BORDER, 0)	//no border colour by default
-			cmpi_valueField.setStyle(DefaultStyle.BACKGROUND, 0)	//no background colour when editable
-			cmpi_valueField.setStyle(DefaultStyle.DISABLED, 0)	//no background colour when not editable
+			cmpi_valueField.setStyle(DefaultInnerTextStyle.BORDER, 0)	//no border color by default
+			cmpi_valueField.setStyle(DefaultStyle.BACKGROUND, 0)	//no background color when editable
+			cmpi_valueField.setStyle(DefaultStyle.DISABLED, 0)	//no background color when not editable
 			
 			drawGraphics(DEF_WIDTH, DEF_HEIGHT, DefaultStyle.BACKGROUND)
 			
-			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGE, updateStyles, false, 0, true)
+			addEventListener(StyleEvent.STYLE_CHANGE, updateStyles, false, 0, true)
 			addEventListener(MouseEvent.CLICK, resetTimer, false, 0, true)
 			addEventListener(KeyboardEvent.KEY_UP, changeState, false, 0, true)
 			addEventListener(KeyboardEvent.KEY_DOWN, changeState, false, 0, true)
@@ -99,7 +98,7 @@ package syncomps
 		{
 			switch(evt.style)
 			{
-				//no border or background colour for these textfields
+				//no border or background color for these textfields
 				case DefaultStyle.DISABLED:
 				case DefaultStyle.BACKGROUND:
 				case DefaultInnerTextStyle.BORDER:
@@ -237,7 +236,7 @@ package syncomps
 			{
 				editing = false
 				value = getNumber(cmpi_valueField.value)
-				drawGraphics(width, height, str_state)
+				drawGraphics(width, height, state)
 				dispatchEvent(new Event(Event.CHANGE, false, false))
 			}
 		}
@@ -278,14 +277,6 @@ package syncomps
 			DEFAULT_STYLE = styleClass
 		}
 		
-		override public function set width(value:Number):void {
-			drawGraphics(value, height, str_state)
-		}
-		
-		override public function set height(value:Number):void {
-			drawGraphics(width, value, str_state)
-		}
-		
 		public function get value():Number {
 			return num_value
 		}
@@ -299,7 +290,7 @@ package syncomps
 			else if(num_value < num_min) {
 				num_value = num_min
 			}
-			drawGraphics(width, height, str_state)
+			drawGraphics(width, height, state)
 		}
 		
 		private function changeValueOnEvent(evt:Event):void
@@ -335,15 +326,15 @@ package syncomps
 		override protected function drawGraphics(width:int, height:int, state:String):void
 		{
 			var shapeGraphics:Graphics
-			var colour:uint, colourAlpha:Number;
+			var color:uint, colorAlpha:Number;
 			if (enabled) {
-				colour = uint(getStyle(state))
+				color = uint(getStyle(state))
 			}
 			else {
-				colour = uint(getStyle(DefaultStyle.DISABLED))
+				color = uint(getStyle(DefaultStyle.DISABLED))
 			}
-			colourAlpha = ((colour & 0xFF000000) >>> 24) / 0xFF;
-			colour = colour & 0x00FFFFFF
+			colorAlpha = ((color & 0xFF000000) >>> 24) / 0xFF;
+			color = color & 0x00FFFFFF
 			super.drawGraphics(width, height, state)
 			
 			if (!editing) {
@@ -360,7 +351,7 @@ package syncomps
 			shapeGraphics = graphics
 			shapeGraphics.clear();
 			shapeGraphics.lineStyle(1)
-			shapeGraphics.beginFill(colour, colourAlpha)
+			shapeGraphics.beginFill(color, colorAlpha)
 			shapeGraphics.drawRect(0, 0, width - 1, height - 1)
 			shapeGraphics.endFill()
 			

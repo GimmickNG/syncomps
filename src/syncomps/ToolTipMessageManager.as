@@ -69,7 +69,7 @@ package syncomps
 		
 		private function displayToolTipOnEvent(evt:MouseEvent):void
 		{
-			var currTarget:DisplayObject = evt.target as DisplayObject
+			var currTarget:DisplayObject = evt.currentTarget as DisplayObject
 			if (currTarget && currTarget.stage) {
 				displayToolTip(evt.stageX, evt.stageY, currTarget.stage.nativeWindow, currTarget)
 			}
@@ -94,19 +94,16 @@ package syncomps
 		
 		private function setMessages(targets:Array, messages:Array):void
 		{
-			for (var i:uint = 0; i < targets.length && i < messages.length; ++i) {
-				setMessage(targets[i] as InteractiveObject, messages[i] as String)
-			}
+			targets.forEach(function applyMessage(item:InteractiveObject, index:int, array:Array):void {
+				messages && index < messages.length && setMessage(item, messages[index] as String)
+			}, this);
 		}
 		
 		private function removeMessages(targets:Array):void
 		{
-			if (targets)
-			{
-				for (var i:uint = 0; i < targets.length; ++i) {
-					removeMessage(targets[i] as InteractiveObject)
-				}
-			}
+			targets && targets.forEach(function deleteMessage(item:InteractiveObject, index:int, array:Array):void {
+				removeMessage(item)
+			}, this);
 		}
 		
 		private function unloadAll():void

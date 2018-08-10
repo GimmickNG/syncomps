@@ -5,7 +5,7 @@ package syncomps.styles
 	 * ...
 	 * @author Gimmick
 	 */
-	public final class DefaultListStyle extends Style 
+	public class DefaultListStyle extends DefaultStyle
 	{
 		public static const CELL_RENDERER:String = "cellRenderer"
 		public static const LIST_DIRECTION:String = "listDirection";
@@ -13,13 +13,8 @@ package syncomps.styles
 		public static const VERTICAL:String = "vertical"
 		public function DefaultListStyle() 
 		{
-			super([DefaultStyle], [CELL_RENDERER, LIST_DIRECTION])
-			init()
-		}
-		private function init():void
-		{
-			setStyle(CELL_RENDERER, ListCell)
-			setStyle(LIST_DIRECTION, VERTICAL)
+			appendStyle(CELL_RENDERER, ListCell)
+			appendStyle(LIST_DIRECTION, VERTICAL)
 		}
 	}
 

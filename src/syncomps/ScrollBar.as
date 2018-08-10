@@ -1,23 +1,26 @@
 package syncomps 
 {
 	import flash.display.DisplayObject;
-	import flash.events.FocusEvent;
-	import flash.events.KeyboardEvent;
-	import flash.ui.Keyboard;
-	import syncomps.events.ScrollEvent;
 	import flash.display.Graphics;
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flash.events.FocusEvent;
+	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
 	import flash.events.TimerEvent;
 	import flash.geom.Rectangle;
+	import flash.ui.Keyboard;
 	import flash.utils.Timer;
+	import syncomps.events.ScrollEvent;
 	import syncomps.events.StyleEvent;
-	import syncomps.styles.ScrollBarStyle;
-	import syncomps.styles.Style;
 	import syncomps.styles.DefaultStyle;
+	import syncomps.styles.ScrollBarStyle;
 	
-	[Event(name="SCROLL", type="syncomps.events.ScrollEvent")]
+	/**
+	 * Dispatched when a scroll event occurs.
+	 */
+	[Event(name = "synScEScroll", type = "syncomps.events.ScrollEvent")]
+	
 	/**
 	 * ...
 	 * @author Gimmick
@@ -79,7 +82,7 @@ package syncomps
 			value = 0
 			setScrollProperties(1, 0, 100)
 			
-			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGE, updateStyles, false, 0, true)
+			addEventListener(StyleEvent.STYLE_CHANGE, updateStyles, false, 0, true)
 			
 			addEventListener(MouseEvent.CLICK, resetTimer, false, 0, true)
 			addEventListener(KeyboardEvent.KEY_UP, changeState, false, 0, true)
@@ -103,7 +106,7 @@ package syncomps
 		private function updateStyles(evt:StyleEvent):void
 		{
 			b_scrollBarChange ||= (evt.style == ScrollBarStyle.SCROLL_DIRECTION)
-			drawGraphics(width, height, str_state)
+			drawGraphics(width, height, state)
 		}
 		
 		private function changeState(evt:Event):void
@@ -168,7 +171,7 @@ package syncomps
 			//max = spr_rightButton.x - spr_thumb.width
 			//min = spr_leftButton.x + spr_leftButton.width
 			u_refreshMask = REFMASK_THUMB
-			drawGraphics(width, height, str_state)
+			drawGraphics(width, height, state)
 			if (direction == ScrollBarStyle.DIRECTION_VERTICAL) {
 				moveThumbTo(spr_thumb.y)
 			}
@@ -269,7 +272,7 @@ package syncomps
 				maxPosition = (spr_rightButton.x - spr_thumb.width)
 				minPosition = (spr_leftButton.x + spr_leftButton.width)
 			}
-			this.value = ((num_max - num_min) * ((value - minPosition) / (maxPosition - minPosition))) + num_min
+			this.value = ((maximum - minimum) * ((value - minPosition) / (maxPosition - minPosition))) + minimum
 		}
 		
 		override protected function drawGraphics(width:int, height:int, state:String):void 
@@ -277,19 +280,19 @@ package syncomps
 			var i:uint;
 			var graphics:Graphics;
 			var btnWidth:int, btnHeight:int;
-			var colour:uint = uint(getStyle(state));
+			var color:uint = uint(getStyle(state));
 			var background:uint = uint(getStyle(DefaultStyle.BACKGROUND));
 			var backgroundSecondary:uint = uint(getStyle(ScrollBarStyle.BACKGROUND_SECONDARY));
-			var backgroundSecondaryAlpha:Number, backgroundAlpha:Number, colourAlpha:Number, activeColourAlpha:Number;
+			var backgroundSecondaryAlpha:Number, backgroundAlpha:Number, colorAlpha:Number, activeColorAlpha:Number;
 			
 			super.drawGraphics(width, height, state)
 			spr_leftButton.y = spr_rightButton.y = 0;
-			colourAlpha = ((colour & 0xFF000000) >>> 24) / 0xFF;
+			colorAlpha = ((color & 0xFF000000) >>> 24) / 0xFF;
 			backgroundSecondaryAlpha = ((backgroundSecondary & 0xFF000000) >>> 24) / 0xFF;
 			backgroundAlpha = ((background & 0xFF000000) >>> 24) / 0xFF;
 			backgroundSecondary = backgroundSecondary & 0x00FFFFFF
 			background = background & 0x00FFFFFF
-			colour = colour & 0x00FFFFFF
+			color = color & 0x00FFFFFF
 			
 			if (direction == ScrollBarStyle.DIRECTION_HORIZONTAL)
 			{
@@ -316,10 +319,14 @@ package syncomps
 																btnWidth * 0.3, btnHeight * 0.5,	//(left, middle) point		*
 																btnWidth * 0.6, btnHeight * 0.75	//(bottom, bottom) point	  *
 															];
-			var rightVector:Vector.<Number> = new Vector.<Number>()
-			for (i = 0; i < leftVector.length; i += 2) {
-				rightVector.push(btnWidth - leftVector[i], btnHeight - leftVector[i + 1])
-			}
+			var rightVector:Vector.<Number> = leftVector.map(function invert(item:Number, index:int, array:Vector.<Number>):Number
+			{
+				if(index & 1) {
+					return btnHeight - item
+				}
+				return btnWidth - item
+			});
+			
 			if (direction == ScrollBarStyle.DIRECTION_VERTICAL)
 			{
 				//transpose x, y coordinates
@@ -344,56 +351,53 @@ package syncomps
 			graphics = spr_leftButton.graphics
 			if (u_refreshMask & REFMASK_LEFT)
 			{
-				activeColor = colour
-				activeColourAlpha = colourAlpha
+				activeColor = color
+				activeColorAlpha = colorAlpha
 			}
 			else {
 				activeColor = background
-				activeColourAlpha = backgroundAlpha
+				activeColorAlpha = backgroundAlpha
 			}
 			graphics.clear()
 			graphics.beginFill(backgroundSecondary, backgroundSecondaryAlpha)
 			graphics.drawRect(0, 0, btnWidth, btnHeight)
 			graphics.endFill()
-			graphics.beginFill(activeColor, activeColourAlpha)
+			graphics.beginFill(activeColor, activeColorAlpha)
 			graphics.drawTriangles(leftVector)
 			graphics.endFill()
 			
 			graphics = spr_rightButton.graphics
 			if (u_refreshMask & REFMASK_RIGHT)
 			{
-				activeColor = colour
-				activeColourAlpha = colourAlpha
+				activeColor = color
+				activeColorAlpha = colorAlpha
 			}
 			else {
 				activeColor = background
-				activeColourAlpha = backgroundAlpha
+				activeColorAlpha = backgroundAlpha
 			}
 			graphics.clear()
 			graphics.beginFill(backgroundSecondary, backgroundSecondaryAlpha)
 			graphics.drawRect(0, 0, btnWidth, btnHeight)
 			graphics.endFill()
-			graphics.beginFill(activeColor, activeColourAlpha)
+			graphics.beginFill(activeColor, activeColorAlpha)
 			graphics.drawTriangles(rightVector)
 			graphics.endFill()
 			
 			graphics = spr_thumb.graphics
 			graphics.clear()
-			if ((num_max > num_min) && (0 < num_pageSize && num_pageSize < (num_max - num_min)))
+			if ((maximum > minimum) && (0 < num_pageSize && num_pageSize < (maximum - minimum)))
 			{
 				var thumbSize:Number = getThumbSize()
 				if(thumbSize < 4) {
 					thumbSize = 4;
 				}
+				activeColor = background
+				activeColorAlpha = backgroundAlpha
 				if (u_refreshMask & REFMASK_THUMB)
 				{
-					activeColor = colour
-					activeColourAlpha = colourAlpha
-				}
-				else
-				{
-					activeColor = background
-					activeColourAlpha = backgroundAlpha
+					activeColor = color
+					activeColorAlpha = colorAlpha
 				}
 				if (direction == ScrollBarStyle.DIRECTION_HORIZONTAL)
 				{
@@ -401,7 +405,7 @@ package syncomps
 					graphics.beginFill(0, 0)
 					graphics.drawRect(0, 0, thumbSize, height * 0.2)
 					graphics.endFill()
-					graphics.beginFill(activeColor, activeColourAlpha)
+					graphics.beginFill(activeColor, activeColorAlpha)
 					graphics.drawRect(0, height * 0.2, thumbSize, height * 0.6)
 					graphics.endFill()
 					graphics.beginFill(0, 0)
@@ -415,15 +419,14 @@ package syncomps
 				}
 				else
 				{
+					
 					spr_thumb.x = 0;
 					graphics.beginFill(0, 0)
 					graphics.drawRect(0, 0, width * 0.2, thumbSize)
 					graphics.endFill()
-					graphics.beginFill(activeColor, activeColourAlpha)
+					
+					graphics.beginFill(activeColor, activeColorAlpha)
 					graphics.drawRect(width * 0.2, 0, width * 0.6, thumbSize)
-					graphics.endFill()
-					graphics.beginFill(0, 0)
-					graphics.drawRect(width * 0.8, 0, width * 0.2, thumbSize)
 					graphics.endFill()
 					
 					rect_drag.x = 0
@@ -432,6 +435,7 @@ package syncomps
 					rect_drag.width = 0;
 				}
 			}
+			
 			graphics.endFill()
 		}
 		
@@ -440,10 +444,10 @@ package syncomps
 			if (b_scrollBarChange)
 			{
 				if (direction == ScrollBarStyle.DIRECTION_HORIZONTAL) {
-					num_thumbSize = num_pageSize * (spr_rightButton.x - (spr_leftButton.x + spr_leftButton.width)) / (num_max - num_min)
+					num_thumbSize = num_pageSize * (spr_rightButton.x - (spr_leftButton.x + spr_leftButton.width)) / (maximum - minimum)
 				}
 				else {
-					num_thumbSize = num_pageSize * (spr_rightButton.y - (spr_leftButton.y + spr_leftButton.height)) / (num_max - num_min)
+					num_thumbSize = num_pageSize * (spr_rightButton.y - (spr_leftButton.y + spr_leftButton.height)) / (maximum - minimum)
 				}
 				b_scrollBarChange = false
 			}
@@ -476,7 +480,7 @@ package syncomps
 			if (direction == ScrollBarStyle.DIRECTION_HORIZONTAL) {
 				b_scrollBarChange = true
 			}
-			drawGraphics(value, height, str_state)
+			super.width = value;
 		}
 		
 		override public function set height(value:Number):void 
@@ -485,7 +489,7 @@ package syncomps
 			if (direction == ScrollBarStyle.DIRECTION_VERTICAL) {
 				b_scrollBarChange = true
 			}
-			drawGraphics(width, value, str_state)
+			super.height = value
 		}
 		
 		public function get value():Number {
@@ -499,11 +503,11 @@ package syncomps
 			if(num_stepSize) {
 				newValue -= num % num_stepSize
 			}
-			if(newValue > num_max) {
-				newValue = num_max
+			if(newValue > maximum) {
+				newValue = maximum
 			}
-			else if(newValue < num_min) {
-				newValue = num_min
+			else if(newValue < minimum) {
+				newValue = minimum
 			}
 			if(newValue == num_value) {
 				return;
@@ -515,35 +519,32 @@ package syncomps
 			//min = spr_leftButton.x + spr_leftButton.width
 			//u = num_max * spr_thumb.x / (max - min)
 			u_refreshMask = REFMASK_NONE
-			drawGraphics(width, height, str_state)
+			drawGraphics(width, height, state)
 			var minPosition:Number, maxPosition:Number;
 			if (direction == ScrollBarStyle.DIRECTION_HORIZONTAL)
 			{
 				maxPosition = (spr_rightButton.x - spr_thumb.width)
 				minPosition = (spr_leftButton.x + spr_leftButton.width)
-				spr_thumb.x = minPosition + ((newValue - num_min) * (maxPosition - minPosition) / (num_max - num_min))
+				spr_thumb.x = minPosition + ((newValue - minimum) * (maxPosition - minPosition) / (maximum - minimum))
 			}
 			else
 			{
 				maxPosition = (spr_rightButton.y - spr_thumb.height)
 				minPosition = (spr_leftButton.y + spr_leftButton.height)
-				spr_thumb.y = minPosition + ((newValue - num_min) * (maxPosition - minPosition) / (num_max - num_min))
+				spr_thumb.y = minPosition + ((newValue - minimum) * (maxPosition - minPosition) / (maximum - minimum))
 			}
 			dispatchEvent(new ScrollEvent(ScrollEvent.SCROLL, newValue, direction, delta, false, false))
 		}
 		
-		public function get minimum():Number 
-		{
+		public function get minimum():Number {
 			return num_min;
 		}
 		
-		public function get maximum():Number 
-		{
+		public function get maximum():Number {
 			return num_max;
 		}
 		
-		public function get pageSize():Number 
-		{
+		public function get pageSize():Number {
 			return num_pageSize;
 		}
 		
@@ -556,7 +557,7 @@ package syncomps
 			num_value = minimum
 			u_refreshMask = REFMASK_NONE
 			spr_thumb.x = spr_thumb.y = 0;
-			drawGraphics(width, height, str_state)
+			drawGraphics(width, height, state)
 			//0|                            |---------||100
 			//0||---------|                            |100
 			//0||___________________________|
@@ -582,18 +583,15 @@ package syncomps
 			setStyle(ScrollBarStyle.SCROLL_DIRECTION, value)
 		}
 		
-		public function get stepSize():Number 
-		{
+		public function get stepSize():Number {
 			return num_stepSize;
 		}
 		
-		public function set stepSize(value:Number):void 
-		{
+		public function set stepSize(value:Number):void {
 			num_stepSize = value;
 		}
 		
-		public function get dragging():Boolean 
-		{
+		public function get dragging():Boolean {
 			return b_dragging;
 		}
 		

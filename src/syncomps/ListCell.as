@@ -2,18 +2,24 @@ package syncomps
 {
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
+	import flash.display.DisplayObject;
 	import flash.display.PixelSnapping;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.events.FocusEvent;
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
+	import flash.events.TimerEvent;
 	import flash.text.TextField;
 	import flash.text.TextFieldAutoSize;
+	import flash.text.TextFormat;
 	import flash.ui.Keyboard;
+	import flash.utils.Timer;
+	import syncomps.events.ButtonEvent;
 	import syncomps.events.StyleEvent;
-	import syncomps.interfaces.IAutoResize;
-	import syncomps.interfaces.ILabel;
+	import syncomps.interfaces.graphics.IAutoResize;
+	import syncomps.interfaces.graphics.IIcon;
+	import syncomps.interfaces.graphics.ILabel;
 	import syncomps.styles.DefaultInnerTextStyle;
 	import syncomps.styles.SkinnableTextStyle;
 	import syncomps.styles.Style;
@@ -26,17 +32,17 @@ package syncomps
 	 * ...
 	 * @author Gimmick
 	 */
-	public class ListCell extends SynComponent implements IAutoResize, ILabel
+	public class ListCell extends SynComponent implements IAutoResize, ILabel, IIcon
 	{
 		public static const DEF_WIDTH:uint = 96;
 		public static const DEF_HEIGHT:uint = 24;
 		protected static var DEFAULT_STYLE:Class = DefaultInnerTextStyle
 		
 		private var i_index:int;
-		private var bmp_icon:Bitmap;
+		private var cmpi_label:Label;
 		private var b_selected:Boolean;
+		private var cl_scrollTimer:Timer
 		private var b_dispatchClick:Boolean;
-		private var tf_label:SkinnableTextField
 		public function ListCell() 
 		{
 			super()
@@ -44,14 +50,13 @@ package syncomps
 		}
 		private function init():void
 		{
-			tf_label = new SkinnableTextField()
-			bmp_icon = new Bitmap(null, PixelSnapping.ALWAYS, true)
+			cmpi_label = new Label()
+			cl_scrollTimer = new Timer(1000, 1)
 			
-			tf_label.selectable = tf_label.multiline = tf_label.mouseEnabled = false;
 			b_selected = false;
-			addChild(tf_label)
+			addChild(cmpi_label)
 			
-			styleDefinition.addEventListener(StyleEvent.STYLE_CHANGE, updateStyles, false, 0, true)
+			addEventListener(StyleEvent.STYLE_CHANGE, updateStyles, false, 0, true)
 			drawGraphics(DEF_WIDTH, DEF_HEIGHT, DefaultStyle.BACKGROUND)
 			label = null
 			
@@ -64,6 +69,11 @@ package syncomps
 			addEventListener(MouseEvent.RELEASE_OUTSIDE, changeState, false, 0, true)
 			addEventListener(KeyboardEvent.KEY_UP, dispatchClickEvent, false, 0, true)
 			addEventListener(KeyboardEvent.KEY_DOWN, startDispatchClickEvent, false, 0, true)
+			cl_scrollTimer.addEventListener(TimerEvent.TIMER_COMPLETE, changeLabelScrollH, false, 0, true)
+		}
+		
+		private function changeLabelScrollH(evt:TimerEvent):void {
+			cmpi_label.textField.scrollH = cmpi_label.textField.maxScrollH
 		}
 		
 		override public function getDefaultStyle():Class {
@@ -73,8 +83,10 @@ package syncomps
 			DEFAULT_STYLE = styleClass
 		}
 		
-		private function updateStyles(evt:StyleEvent):void {
-			tf_label.setStyle(evt.style, evt.value)
+		private function updateStyles(evt:StyleEvent):void
+		{
+			cmpi_label.setStyle(evt.style, evt.value)
+			drawGraphics(width, height, state)
 		}
 		
 		private function changeState(evt:Event):void
@@ -101,7 +113,7 @@ package syncomps
 		{
 			if (b_dispatchClick)
 			{
-				dispatchEvent(new MouseEvent(MouseEvent.CLICK, true, false))
+				dispatchEvent(new ButtonEvent(ButtonEvent.CLICK, true, false))
 				b_dispatchClick = false
 			}
 			resetBackground()
@@ -114,23 +126,6 @@ package syncomps
 				drawGraphics(width, height, DefaultStyle.DOWN);
 				b_dispatchClick = true
 			}
-		}
-		
-		override public function set width(value:Number):void {
-			drawGraphics(value, height, str_state)
-		}
-		
-		override public function set height(value:Number):void {
-			drawGraphics(width, value, str_state)
-		}
-		
-		public function set selected(value:Boolean):void
-		{
-			b_selected = value
-			resetBackground()
-		}
-		public function get selected():Boolean {
-			return b_selected
 		}
 		
 		public function get iconSize():int {
@@ -153,42 +148,33 @@ package syncomps
 		
 		override protected function drawGraphics(width:int, height:int, state:String):void
 		{
-			var colour:uint = uint(getStyle(state)), colourAlpha:Number;
-			if (!enabled) {
-				colour = uint(getStyle(DefaultStyle.DISABLED))
-			}
-			colourAlpha = ((colour & 0xFF000000) >>> 24) / 0xFF;
-			colour = colour & 0x00FFFFFF
 			super.drawGraphics(width, height, state)
+			var color:uint = uint(getStyle(state)), colorAlpha:Number;
+			var maxPadding:Number = (8 * (1 - Math.pow(1.2, -width)))
+			if (!enabled) {
+				color = uint(getStyle(DefaultStyle.DISABLED))
+			}
+			colorAlpha = ((color & 0xFF000000) >>> 24) / 0xFF;
+			color = color & 0x00FFFFFF
+			
 			graphics.clear();
-			graphics.beginFill(colour, colourAlpha)
+			graphics.beginFill(color, colorAlpha)
 			graphics.drawRect(0, 0, width, height)
 			graphics.endFill()
-			tf_label.y = (height - (tf_label.height + 4)) * 0.5
-			if (tf_label.y < 0)
-			{
-				tf_label.y = 0;
-				tf_label.height = height
+			
+			cmpi_label.resizeHeight()
+			cmpi_label.x = maxPadding
+			cmpi_label.width = width - cmpi_label.x
+			if (height < cmpi_label.height) {
+				cmpi_label.height = height
 			}
-			bmp_icon.y = (height - (bmp_icon.height)) * 0.5
-			if (width > 12 && bmp_icon.bitmapData)
-			{
-				addChild(bmp_icon)
-				bmp_icon.x = 8
+			cmpi_label.y = (height - cmpi_label.height) * 0.5
+			
+			cl_scrollTimer.reset();
+			cmpi_label.textField.scrollH = 0
+			if(cmpi_label.textField.maxScrollH && state == DefaultStyle.HOVER) {
+				cl_scrollTimer.start();
 			}
-			else if(bmp_icon.parent) {
-				removeChild(bmp_icon)
-			}
-			if (bmp_icon.parent) {
-				tf_label.x = bmp_icon.x + bmp_icon.width + 4
-			}
-			else if(width > 8) {
-				tf_label.x = 8
-			}
-			else {
-				tf_label.x = width * 0.25
-			}
-			tf_label.width = width - tf_label.x
 		}
 		
 		override public function unload():void
@@ -209,66 +195,44 @@ package syncomps
 		
 		public function resizeWidth():void 
 		{
-			tf_label.autoSize = TextFieldAutoSize.LEFT
-			drawGraphics(tf_label.x + tf_label.width + 4, height, str_state)
-			tf_label.autoSize = TextFieldAutoSize.NONE
+			cmpi_label.resizeWidth()
+			drawGraphics(cmpi_label.x + cmpi_label.width + 4, height, state)
 		}
 		
 		public function resizeHeight():void 
 		{
-			var maxHeight:int = bmp_icon.height
-			if(tf_label.height > maxHeight) {
-				maxHeight = tf_label.height
-			}
-			drawGraphics(width, maxHeight + 4, str_state)
+			cmpi_label.resizeHeight()
+			drawGraphics(width, height, state)
 		}
 		
 		public function get textField():TextField {
-			return tf_label
+			return cmpi_label.textField
 		}
 		
-		public function get label():String
-		{
-			return tf_label.text;
+		public function get label():String {
+			return cmpi_label.label;
 		}
 		
-		public function set label(value:String):void 
-		{
-			if (value && value.length) {
-				tf_label.text = value
-			}
-			else {
-				tf_label.text = " ";
-			}
-			tf_label.height = tf_label.textHeight + 4
-			if (!(value && value.length)) {
-				tf_label.text = ""
-			}
+		public function set label(value:String):void {
+			cmpi_label.label = value || "";
 		}
 		
-		public function get index():int 
-		{
+		public function get index():int {
 			return i_index;
 		}
 		
-		public function set index(value:int):void 
-		{
+		public function set index(value:int):void {
 			i_index = value;
 		}
 		
-		public function get icon():BitmapData {
-			return bmp_icon.bitmapData;
+		public function get icon():DisplayObject {
+			return cmpi_label.icon
 		}
 		
-		public function set icon(value:BitmapData):void 
+		public function set icon(value:DisplayObject):void 
 		{
-			var width:int = this.width
-			var height:int = this.height
-			bmp_icon.bitmapData = value;
-			if (bmp_icon.width && bmp_icon.height) {
-				bmp_icon.width = bmp_icon.height = iconSize
-			}
-			drawGraphics(width, height, str_state)
+			cmpi_label.icon = value
+			drawGraphics(width, height, state)
 		}
 		
 	}

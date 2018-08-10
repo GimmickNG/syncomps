@@ -18,10 +18,11 @@
 		public function ToggleIcon() {
 			init(null, null, false)
 		}
+		
 		public function update(bitmapOn:BitmapData, bitmapOff:BitmapData):void
 		{
 			bmp_off.bitmapData = bitmapOff
-			bmp_on.bitmapData = bitmapOn	
+			bmp_on.bitmapData = bitmapOn
 		}
 		private function init(bitmapOn:BitmapData, bitmapOff:BitmapData, visibleInit:Boolean):void 
 		{

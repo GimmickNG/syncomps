@@ -23,7 +23,7 @@ package syncomps.data
 				obj_proxy = new Object()
 			}
 			vec_properties = new Vector.<String>();
-			for(var prop:* in obj_proxy) {
+			for (var prop:* in obj_proxy) {
 				vec_properties.push(prop)
 			}
 		}
@@ -31,7 +31,7 @@ package syncomps.data
 		{
 			var functor:Function = getProperty(methodName) as Function
 			if (functor != null) {
-				return functor.apply(null, args);
+				return functor.apply(this, args);
 			}
 			return undefined;
 		}
@@ -88,6 +88,7 @@ package syncomps.data
 		internal function setDispatcher(dispatcher:EventDispatcher):void {
 			cl_dispatcher = dispatcher
 		}
+		
 		/**
 		 * Returns the proxy's underlying object.
 		 */

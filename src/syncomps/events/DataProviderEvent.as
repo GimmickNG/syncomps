@@ -6,17 +6,17 @@ package syncomps.events
 	/**
 	 * @eventType	syncomps.events.DatProviderEvent.ITEM_ADDED
 	 */
-	[Event(name = "ITEM_ADDED", type = "syncomps.events.DataProviderEvent")]
+	[Event(name = "synDPEItemAdded", type = "syncomps.events.DataProviderEvent")]
 	
 	/**
 	 * @eventType	syncomps.events.DatProviderEvent.ITEM_REMOVED
 	 */
-	[Event(name = "ITEM_REMOVED", type = "syncomps.events.DataProviderEvent")]
+	[Event(name = "synDPEItemRemoved", type = "syncomps.events.DataProviderEvent")]
 	
 	/**
 	 * @eventType	syncomps.events.DatProviderEvent.DATA_REFRESH
 	 */
-	[Event(name = "DATA_REFRESH", type = "syncomps.events.DataProviderEvent")]
+	[Event(name = "synDPEDataRefresh", type = "syncomps.events.DataProviderEvent")]
 	
 	/**
 	 * ...
@@ -24,12 +24,13 @@ package syncomps.events
 	 */
 	public class DataProviderEvent extends Event 
 	{
-		public static const ITEM_ADDED:String = "ITEM_ADDED"
-		static public const ITEM_REMOVED:String = "ITEM_REMOVED";
-		static public const DATA_REFRESH:String = "DATA_REFRESH";
-		private var obj_item:DataElement
+		public static const ITEM_ADDED:String = "synDPEItemAdded"
+		static public const ITEM_REMOVED:String = "synDPEItemRemoved";
+		static public const DATA_REFRESH:String = "synDPEDataRefresh";
+		
 		private var i_index:int
-		public function DataProviderEvent(type:String, item:DataElement, index:int, bubbles:Boolean=false, cancelable:Boolean=false) 
+		private var obj_item:DataElement
+		public function DataProviderEvent(type:String, item:DataElement, index:int, bubbles:Boolean = false, cancelable:Boolean = false)
 		{ 
 			super(type, bubbles, cancelable);
 			obj_item = item;
